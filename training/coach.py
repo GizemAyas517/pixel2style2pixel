@@ -19,6 +19,11 @@ from models.psp import pSp
 from training.ranger import Ranger
 
 
+import torchvision.transforms as transforms
+import torchvision
+
+
+
 class Coach:
 	def __init__(self, opts):
 		self.opts = opts
@@ -181,26 +186,46 @@ class Coach:
 		return optimizer
 
 	def configure_datasets(self):
+		train_dataset = []
+		test_dataset = []
 		if self.opts.dataset_type not in data_configs.DATASETS.keys():
 			Exception(f'{self.opts.dataset_type} is not a valid dataset_type')
 		print(f'Loading dataset for {self.opts.dataset_type}')
-		dataset_args = data_configs.DATASETS[self.opts.dataset_type]
-		transforms_dict = dataset_args['transforms'](self.opts).get_transforms()
-		train_dataset = ImagesDataset(source_root=dataset_args['train_source_root'],
-									  target_root=dataset_args['train_target_root'],
-									  source_transform=transforms_dict['transform_source'],
-									  target_transform=transforms_dict['transform_gt_train'],
-									  opts=self.opts)
-		test_dataset = ImagesDataset(source_root=dataset_args['test_source_root'],
-									 target_root=dataset_args['test_target_root'],
-									 source_transform=transforms_dict['transform_source'],
-									 target_transform=transforms_dict['transform_test'],
-									 opts=self.opts)
-		if self.opts.use_wandb:
-			self.wb_logger.log_dataset_wandb(train_dataset, dataset_name="Train")
-			self.wb_logger.log_dataset_wandb(test_dataset, dataset_name="Test")
-		print(f"Number of training samples: {len(train_dataset)}")
-		print(f"Number of test samples: {len(test_dataset)}")
+		if self.opts.dataset_type == "StanfordCars":
+			print("using the stanford cars dataset")
+			transform = transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+			batch_size = 4
+			trainset = torchvision.datasets.StanfordCars(root='./data', split='train',
+													download=True, transform=transform)
+			trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+													shuffle=True, num_workers=2)
+
+			testset = torchvision.datasets.StanfordCars(root='./data', split='test',
+												download=True, transform=transform)
+			testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+													shuffle=False, num_workers=2)
+			train_dataset = trainset
+			test_dataset = testset						
+		else:
+			
+			dataset_args = data_configs.DATASETS[self.opts.dataset_type]
+			transforms_dict = dataset_args['transforms'](self.opts).get_transforms()
+			train_dataset = ImagesDataset(source_root=dataset_args['train_source_root'],
+										target_root=dataset_args['train_target_root'],
+										source_transform=transforms_dict['transform_source'],
+										target_transform=transforms_dict['transform_gt_train'],
+										opts=self.opts)
+			test_dataset = ImagesDataset(source_root=dataset_args['test_source_root'],
+										target_root=dataset_args['test_target_root'],
+										source_transform=transforms_dict['transform_source'],
+										target_transform=transforms_dict['transform_test'],
+										opts=self.opts)
+			if self.opts.use_wandb:
+				self.wb_logger.log_dataset_wandb(train_dataset, dataset_name="Train")
+				self.wb_logger.log_dataset_wandb(test_dataset, dataset_name="Test")
+			print(f"Number of training samples: {len(train_dataset)}")
+			print(f"Number of test samples: {len(test_dataset)}")
+		
 		return train_dataset, test_dataset
 
 	def calc_loss(self, x, y, y_hat, latent):
