@@ -6,6 +6,7 @@ dataset_paths = {
 	'celeba_train_segmentation': '',
 	'celeba_test_segmentation': '',
 	'ffhq': '',
+	'StanfordCars': ''
 }
 
 model_paths = {
@@ -16,5 +17,5 @@ model_paths = {
 	'mtcnn_rnet': 'pretrained_models/mtcnn/rnet.npy',
 	'mtcnn_onet': 'pretrained_models/mtcnn/onet.npy',
 	'shape_predictor': 'shape_predictor_68_face_landmarks.dat',
-	'moco': 'pretrained_models/moco_v2_800ep_pretrain.pth.tar'
+	'moco': 'pretrained_models/moco_v2_800ep_pretrain.pt'
 }
